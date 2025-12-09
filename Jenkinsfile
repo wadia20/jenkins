@@ -21,18 +21,19 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean install -DskipTests=false'
+                bat 'mvn clean install -DskipTests=false'
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'mvn test'
+                bat 'mvn test'
             }
         }
 
         stage('Code Coverage') {
             steps {
+                // Jacoco reste pour générer la couverture mais sans publier JUnit
                 jacoco execPattern: 'target/jacoco.exec',
                        classPattern: 'target/classes',
                        sourcePattern: 'src/main/java'
@@ -42,9 +43,6 @@ pipeline {
 
     post {
         always {
-            // Publier les résultats JUnit
-            junit 'target/surefire-reports/*.xml'
-
             // Notifications par email
             mail to: "${RECIPIENTS}",
                  subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
