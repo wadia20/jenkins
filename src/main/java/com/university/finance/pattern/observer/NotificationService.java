@@ -8,20 +8,22 @@ public class NotificationService implements TransactionObserver {
 
     @Override
     public void update(Transaction transaction) {
+        java.text.DecimalFormat df = new java.text.DecimalFormat("0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US));
+
         String notification = String.format(
                 "NOTIFICATION: Transaction effectuée le %s\n" +
                         "Type: %s\n" +
-                        "Montant: %.2f €\n" +
+                        "Montant: %s\n" +   // plus de symbole € pour correspondre au test
                         "Description: %s\n",
                 dateFormat.format(transaction.getTimestamp()),
                 transaction.getType(),
-                transaction.getAmount(),
+                df.format(transaction.getAmount()),  // format 2 décimales
                 transaction.getDescription()
         );
 
-        // Dans une vraie application, on enverrait un email/SMS
         System.out.println("=== NOTIFICATION PAR EMAIL ===");
         System.out.println(notification);
         System.out.println("==============================");
     }
+
 }

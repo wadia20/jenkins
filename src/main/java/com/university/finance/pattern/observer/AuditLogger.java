@@ -10,17 +10,19 @@ public class AuditLogger implements TransactionObserver {
 
     @Override
     public void update(Transaction transaction) {
+        java.text.DecimalFormat df = new java.text.DecimalFormat("0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US));
+
         String logMessage = String.format(
-                "[AUDIT] %s - User: %s, Type: %s, Amount: %.2f, Description: %s",
+                "[AUDIT] %s - User: %s, Type: %s, Amount: %s, Description: %s",
                 dateFormat.format(transaction.getTimestamp()),
                 transaction.getUserId(),
                 transaction.getType(),
-                transaction.getAmount(),
+                df.format(transaction.getAmount()),
                 transaction.getDescription()
         );
 
         logger.info(logMessage);
-        // Dans une vraie application, on écrirait dans un fichier journal
         System.out.println(logMessage);
     }
+
 }

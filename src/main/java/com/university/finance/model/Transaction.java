@@ -29,8 +29,13 @@ public class Transaction {
 
     @Override
     public String toString() {
-        // Version simplifiée pour éviter les problèmes avec JaCoCo
-        return String.format("Transaction{id='%s', userId='%s', type=%s, amount=%.2f, timestamp=%s}",
-                id, userId, type, amount, timestamp.toString());
+        return "Transaction{" +
+                "id=" + id +
+                ", userId='" + userId + '\'' +
+                ", type=" + type +
+                ", amount=" + amount +
+                ", description='" + description + '\'' +
+                '}';
     }
+
 }
