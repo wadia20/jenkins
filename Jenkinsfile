@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Remplace par ton email pour les notifications
+        // Ton email pour notifications
         RECIPIENTS = 'wadiasouiki@gmail.com'
     }
 
     tools {
         // Assure-toi que ces noms correspondent aux installations Jenkins
-        maven 'Maven_3.8' // ou change le nom si tu l’as configuré différemment
-        jdk 'JDK_11'       // ou change le nom selon ta config Jenkins
+        maven 'Maven_3.8' // Change selon ta configuration
+        jdk 'JDK_11'       // Change selon ta configuration
     }
 
     stages {
@@ -21,6 +21,7 @@ pipeline {
 
         stage('Build') {
             steps {
+                // Compile et package en exécutant les tests
                 bat 'mvn clean install -DskipTests=false'
             }
         }
@@ -33,22 +34,25 @@ pipeline {
 
         stage('Code Coverage') {
             steps {
-                // Jacoco reste pour générer la couverture mais sans publier JUnit
-                jacoco execPattern: 'target/jacoco.exec',
-                       classPattern: 'target/classes',
-                       sourcePattern: 'src/main/java'
+                // Utilise la syntaxe compatible avec le plugin Jacoco
+                step([$class: 'JacocoPublisher',
+                      execPattern: 'target/jacoco.exec',
+                      classPattern: 'target/classes',
+                      sourcePattern: 'src/main/java'])
             }
         }
     }
 
     post {
         always {
-            // Notifications par email
-            mail to: "${RECIPIENTS}",
-                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: """Le build Jenkins est terminé.
+            // Notification par email via Gmail
+            emailext(
+                to: "${RECIPIENTS}",
+                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Le build Jenkins est terminé.
 Statut: ${currentBuild.currentResult}
 Voir les détails: ${env.BUILD_URL}"""
+            )
         }
     }
 }
