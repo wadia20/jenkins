@@ -1,4 +1,4 @@
 package com.university.finance;
 
-public class TEST {
+public class Test {
 }
