@@ -1,13 +1,13 @@
 pipeline {
     agent any
 
-    environment {
-        RECIPIENTS = 'wadiasouiki@gmail.com'
-    }
-
     tools {
         maven 'Maven_3.8'
         jdk 'JDK_11'
+    }
+
+    environment {
+        RECIPIENTS = "wadiasouiki@gmail.com"
     }
 
     stages {
@@ -18,26 +18,19 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build & Tests') {
             steps {
                 bat 'mvn clean install -DskipTests=false'
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                bat 'mvn test'
-            }
-        }
-
         stage('Generate Jacoco Report') {
             steps {
-                // Copier uniquement le rapport principal
+                // Copier seulement le fichier index.html
                 powershell '''
-                    Copy-Item -Path target/site/jacoco/index.html -Destination jacoco-report.html -Force
+                    Copy-Item -Path "target/site/jacoco/index.html" -Destination "jacoco-report.html" -Force
                 '''
 
-                // Archive dans Jenkins
                 archiveArtifacts artifacts: 'jacoco-report.html', fingerprint: true
             }
         }
@@ -47,16 +40,18 @@ pipeline {
         always {
             emailext(
                 to: RECIPIENTS,
-                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
                 body: """
+Bonjour,
+
 Le build Jenkins est terminé.
 
 Statut : ${currentBuild.currentResult}
 
-Lien du build :
-${env.BUILD_URL}
+Vous trouverez en pièce jointe le rapport Jacoco (version légère).
 
-Le rapport de couverture Jacoco est joint en HTML.
+Cordialement,
+Jenkins
 """,
                 attachmentsPattern: "jacoco-report.html"
             )
