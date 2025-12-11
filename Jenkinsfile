@@ -51,14 +51,15 @@ pipeline {
 
     post {
         always {
-
-            // Envoyer mail + pièce jointe
-            mail to: "${RECIPIENTS}",
-                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: """Le build Jenkins est terminé.
-Statut: ${currentBuild.currentResult}
-Voir les détails: ${env.BUILD_URL}""",
-                 attachments: ['jacoco-report.zip']
+            emailext(
+                to: "${RECIPIENTS}",
+                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Le build Jenkins est terminé.
+    Statut: ${currentBuild.currentResult}
+    Voir les détails: ${env.BUILD_URL}""",
+                attachmentsPattern: "jacoco-report.zip"
+            )
         }
     }
+
 }
