@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     environment {
+        // Remplace par ton email pour les notifications
         RECIPIENTS = 'wadiasouiki@gmail.com'
     }
 
     tools {
-        maven 'Maven_3.8'
-        jdk 'JDK_11'
+        // Assure-toi que ces noms correspondent aux installations Jenkins
+        maven 'Maven_3.8' // ou change le nom si tu l’as configuré différemment
+        jdk 'JDK_11'       // ou change le nom selon ta config Jenkins
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -24,31 +25,30 @@ pipeline {
             }
         }
 
-        stage('Generate PDF') {
+        stage('Run Tests') {
             steps {
-                // Exemple pour créer un pdf fictif
-                powershell '''
-                    New-Item -Path "report.pdf" -ItemType File -Force
-                    Add-Content -Path "report.pdf" -Value "Rapport PDF Jenkins"
-                '''
+                bat 'mvn test'
             }
         }
 
-        stage('Archive PDF') {
+        stage('Code Coverage') {
             steps {
-                archiveArtifacts artifacts: 'report.pdf', fingerprint: true
+                // Jacoco reste pour générer la couverture mais sans publier JUnit
+                jacoco execPattern: 'target/jacoco.exec',
+                       classPattern: 'target/classes',
+                       sourcePattern: 'src/main/java'
             }
         }
     }
 
     post {
         always {
-            emailext(
-                to: RECIPIENTS,
-                subject: "Build #${BUILD_NUMBER} - Rapport PDF",
-                body: "Bonjour,\n\nVeuillez trouver ci-joint le rapport PDF.\n\nCordialement.",
-                attachmentsPattern: "report.pdf"
-            )
+            // Notifications par email
+            mail to: "${RECIPIENTS}",
+                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: """Le build Jenkins est terminé.
+Statut: ${currentBuild.currentResult}
+Voir les détails: ${env.BUILD_URL}"""
         }
     }
 }
