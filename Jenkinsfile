@@ -1,13 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        RECIPIENTS = 'wadiasouiki@gmail.com'
+    }
+
     tools {
         maven 'Maven_3.8'
         jdk 'JDK_11'
-    }
-
-    environment {
-        RECIPIENTS = "wadiasouiki@gmail.com"
     }
 
     stages {
@@ -18,20 +18,25 @@ pipeline {
             }
         }
 
-        stage('Build & Tests') {
+        stage('Build') {
             steps {
                 bat 'mvn clean install -DskipTests=false'
             }
         }
 
-        stage('Generate Jacoco Report') {
+        stage('Generate PDF') {
             steps {
-                // Copier seulement le fichier index.html
+                // Exemple pour créer un pdf fictif
                 powershell '''
-                    Copy-Item -Path "target/site/jacoco/index.html" -Destination "jacoco-report.html" -Force
+                    New-Item -Path "report.pdf" -ItemType File -Force
+                    Add-Content -Path "report.pdf" -Value "Rapport PDF Jenkins"
                 '''
+            }
+        }
 
-                archiveArtifacts artifacts: 'jacoco-report.html', fingerprint: true
+        stage('Archive PDF') {
+            steps {
+                archiveArtifacts artifacts: 'report.pdf', fingerprint: true
             }
         }
     }
@@ -40,20 +45,9 @@ pipeline {
         always {
             emailext(
                 to: RECIPIENTS,
-                subject: "Jenkins Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: """
-Bonjour,
-
-Le build Jenkins est terminé.
-
-Statut : ${currentBuild.currentResult}
-
-Vous trouverez en pièce jointe le rapport Jacoco (version légère).
-
-Cordialement,
-Jenkins
-""",
-                attachmentsPattern: "jacoco-report.html"
+                subject: "Build #${BUILD_NUMBER} - Rapport PDF",
+                body: "Bonjour,\n\nVeuillez trouver ci-joint le rapport PDF.\n\nCordialement.",
+                attachmentsPattern: "report.pdf"
             )
         }
     }
