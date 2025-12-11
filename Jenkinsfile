@@ -38,13 +38,15 @@ pipeline {
             }
         }
 
-        stage('Archive Jacoco Report') {
+        stage('Extract Jacoco Report') {
             steps {
-                // Compresser le rapport Jacoco HTML en ZIP
-                powershell 'Compress-Archive -Path target/site/jacoco/* -DestinationPath jacoco-report.zip -Force'
+                // Copier le fichier principal du rapport Jacoco
+                powershell '''
+                    Copy-Item -Path target/site/jacoco/index.html -Destination jacoco-report.html -Force
+                '''
 
-                // Archiver dans Jenkins (utile pour historique)
-                archiveArtifacts artifacts: 'jacoco-report.zip', fingerprint: true
+                // Archiver pour Jenkins (historique)
+                archiveArtifacts artifacts: 'jacoco-report.html', fingerprint: true
             }
         }
     }
@@ -55,11 +57,15 @@ pipeline {
                 to: "${RECIPIENTS}",
                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: """Le build Jenkins est terminé.
-    Statut: ${currentBuild.currentResult}
-    Voir les détails: ${env.BUILD_URL}""",
-                attachmentsPattern: "jacoco-report.zip"
+
+Statut: ${currentBuild.currentResult}
+
+Lien vers le Build :
+${env.BUILD_URL}
+
+Le rapport de couverture Jacoco est attaché au mail (fichier HTML).""",
+                attachmentsPattern: "jacoco-report.html"
             )
         }
     }
-
 }
