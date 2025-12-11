@@ -30,22 +30,14 @@ pipeline {
             }
         }
 
-        stage('Code Coverage') {
+        stage('Generate Jacoco Report') {
             steps {
-                jacoco execPattern: 'target/jacoco.exec',
-                       classPattern: 'target/classes',
-                       sourcePattern: 'src/main/java'
-            }
-        }
-
-        stage('Extract Jacoco Report') {
-            steps {
-                // Copier le fichier principal du rapport Jacoco
+                // Copier uniquement le rapport principal
                 powershell '''
                     Copy-Item -Path target/site/jacoco/index.html -Destination jacoco-report.html -Force
                 '''
 
-                // Archiver pour Jenkins (historique)
+                // Archive dans Jenkins
                 archiveArtifacts artifacts: 'jacoco-report.html', fingerprint: true
             }
         }
@@ -54,16 +46,18 @@ pipeline {
     post {
         always {
             emailext(
-                to: "${RECIPIENTS}",
-                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """Le build Jenkins est terminé.
+                to: RECIPIENTS,
+                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """
+Le build Jenkins est terminé.
 
-Statut: ${currentBuild.currentResult}
+Statut : ${currentBuild.currentResult}
 
-Lien vers le Build :
+Lien du build :
 ${env.BUILD_URL}
 
-Le rapport de couverture Jacoco est attaché au mail (fichier HTML).""",
+Le rapport de couverture Jacoco est joint en HTML.
+""",
                 attachmentsPattern: "jacoco-report.html"
             )
         }
