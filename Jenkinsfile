@@ -2,14 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Remplace par ton email pour les notifications
         RECIPIENTS = 'wadiasouiki@gmail.com'
     }
 
     tools {
-        // Assure-toi que ces noms correspondent aux installations Jenkins
-        maven 'Maven_3.8' // ou change le nom si tu l’as configuré différemment
-        jdk 'JDK_11'       // ou change le nom selon ta config Jenkins
+        maven 'Maven_3.8'
+        jdk 'JDK_11'
     }
 
     stages {
@@ -33,22 +31,32 @@ pipeline {
 
         stage('Code Coverage') {
             steps {
-                // Jacoco reste pour générer la couverture mais sans publier JUnit
                 jacoco execPattern: 'target/jacoco.exec',
                        classPattern: 'target/classes',
                        sourcePattern: 'src/main/java'
+                // Génère le rapport HTML
+                bat 'mvn jacoco:report'
+            }
+        }
+
+        stage('Zip Jacoco Report') {
+            steps {
+                // Zipper le dossier HTML généré
+                bat 'powershell Compress-Archive -Path target/site/jacoco/* -DestinationPath target/jacoco-report.zip'
             }
         }
     }
 
     post {
         always {
-            // Notifications par email
+            // Notifications avec le zip en pièce jointe
             mail to: "${RECIPIENTS}",
                  subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: """Le build Jenkins est terminé.
 Statut: ${currentBuild.currentResult}
-Voir les détails: ${env.BUILD_URL}"""
+Voir les détails: ${env.BUILD_URL}""",
+                 attachLog: false,
+                 attachmentsPattern: 'target/jacoco-report.zip'
         }
     }
 }
