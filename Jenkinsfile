@@ -49,14 +49,17 @@ pipeline {
 
     post {
         always {
-            // Notifications avec le zip en pièce jointe
-            mail to: "${RECIPIENTS}",
-                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: """Le build Jenkins est terminé.
-Statut: ${currentBuild.currentResult}
-Voir les détails: ${env.BUILD_URL}""",
-                 attachLog: false,
-                 attachmentsPattern: 'target/jacoco-report.zip'
+            // Vérifie que le plugin Email Extension est installé
+            emailext(
+                to: "${RECIPIENTS}",
+                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Le build Jenkins est terminé.
+    Statut: ${currentBuild.currentResult}
+    Voir les détails: ${env.BUILD_URL}""",
+                attachLog: false,
+                attachmentsPattern: 'target/jacoco-report.zip'
+            )
         }
     }
+
 }
