@@ -1,44 +1,35 @@
 pipeline {
     agent any
 
-    environment {
-        RECIPIENTS = 'wadiasouiki@gmail.com'
-    }
-
-    tools {
-        maven 'Maven_3.8'
-        jdk 'JDK_11'
-    }
-
     stages {
-
-        stage('Checkout') {
+        stage('Build and Test') {
             steps {
-                checkout scm
+                bat 'mvn clean test jacoco:report site'
             }
         }
 
-        stage('Build, Test & PDF') {
+        stage('Generate PDF Report') {
             steps {
-                bat 'mvn clean test jacoco:report site site:pdf'
+                bat """
+                "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe" ^
+                --enable-local-file-access ^
+                --javascript-delay 500 ^
+                target\\site\\jacoco\\index.html ^
+                target\\jacoco-report.pdf
+                """
             }
         }
-    }
 
-    post {
-        always {
-            emailext(
-                to: "${RECIPIENTS}",
-                subject: "JaCoCo PDF Report - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                mimeType: 'text/html',
-                body: """
-                <h2>Rapport JaCoCo (PDF)</h2>
-                <p><b>Statut :</b> ${currentBuild.currentResult}</p>
-                <p><b>Build :</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                <p>Rapport JaCoCo PDF en pièce jointe</p>
-                """,
-                attachmentsPattern: 'target/jacoco-report.pdf'
-            )
+        stage('Send Email') {
+            steps {
+                emailext(
+                    subject: "JaCoCo Report",
+                    body: "Veuillez trouver le rapport JaCoCo en pièce jointe.",
+                    to: "wadiasouiki@gmail.com",
+                    attachLog: false,
+                    attachmentsPattern: "target/jacoco-report.pdf"
+                )
+            }
         }
     }
 }
