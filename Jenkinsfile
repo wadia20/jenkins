@@ -18,7 +18,7 @@ pipeline {
             }
         }
 
-        stage('Build, Tests & JaCoCo HTML') {
+        stage('Build & Tests & JaCoCo HTML') {
             steps {
                 bat 'mvn clean test jacoco:report'
             }
@@ -37,12 +37,11 @@ pipeline {
                     --disable-external-links ^
                     --javascript-delay 500 ^
                     --no-stop-slow-scripts ^
-                    --quiet ^
-                    /data/index.html /output/jacoco-report.pdf
+                    /data/index.html ^
+                    /output/jacoco-report.pdf
                 """
             }
         }
-
     }
 
     post {
@@ -55,7 +54,7 @@ pipeline {
                 <h2>Rapport JaCoCo (PDF)</h2>
                 <p><b>Statut :</b> ${currentBuild.currentResult}</p>
                 <p><b>Build :</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                <p>Le rapport JaCoCo PDF est en pièce jointe.</p>
+                <p>Rapport JaCoCo PDF en pièce jointe</p>
                 """,
                 attachmentsPattern: 'target/jacoco-report.pdf'
             )
