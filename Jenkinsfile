@@ -1,35 +1,54 @@
 pipeline {
     agent any
 
+    environment {
+        // Remplace par ton email pour les notifications
+        RECIPIENTS = 'wadiasouiki@gmail.com'
+    }
+
+    tools {
+        // Assure-toi que ces noms correspondent aux installations Jenkins
+        maven 'Maven_3.8' // ou change le nom si tu l’as configuré différemment
+        jdk 'JDK_11'       // ou change le nom selon ta config Jenkins
+    }
+
     stages {
-        stage('Build and Test') {
+        stage('Checkout') {
             steps {
-                bat 'mvn clean test jacoco:report site'
+                checkout scm
             }
         }
 
-        stage('Generate PDF Report') {
+        stage('Build') {
             steps {
-                bat """
-                "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe" ^
-                --enable-local-file-access ^
-                --javascript-delay 500 ^
-                target\\site\\jacoco\\index.html ^
-                target\\jacoco-report.pdf
-                """
+                bat 'mvn clean install -DskipTests=false'
             }
         }
 
-        stage('Send Email') {
+        stage('Run Tests') {
             steps {
-                emailext(
-                    subject: "JaCoCo Report",
-                    body: "Veuillez trouver le rapport JaCoCo en pièce jointe.",
-                    to: "wadiasouiki@gmail.com",
-                    attachLog: false,
-                    attachmentsPattern: "target/jacoco-report.pdf"
-                )
+                bat 'mvn test'
             }
+        }
+
+        stage('Code Coverage') {
+            steps {
+                // Jacoco reste pour générer la couverture mais sans publier JUnit
+                jacoco execPattern: 'target/jacoco.exec',
+                       classPattern: 'target/classes',
+                       sourcePattern: 'src/main/java'
+            }
+        }
+    }
+
+    post {
+        always {
+            // Notifications par email
+            mail to: "${RECIPIENTS}",
+                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: """Le build Jenkins est terminé.
+Statut: ${currentBuild.currentResult}
+Voir les détails: ${env.BUILD_URL}"""
         }
     }
 }
