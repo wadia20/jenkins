@@ -38,7 +38,7 @@ pipeline {
                     --javascript-delay 500 ^
                     --no-stop-slow-scripts ^
                     --quiet ^
-                    /data/index.html /output/jacoco-report.pdf || exit 0
+                    /data/index.html /output/jacoco-report.pdf
                 """
             }
         }
