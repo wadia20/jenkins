@@ -28,10 +28,11 @@ pipeline {
             steps {
                 bat '''
                 docker run --rm ^
-                  -v "%CD%\\target\\site\\jacoco:/data" ^
-                  -v "%CD%\\target:/output" ^
-                  surnet/alpine-wkhtmltopdf ^
+                  -v "C:\ProgramData\Jenkins\.jenkins\workspace\testjenkins\target\site\jacoco:/data" ^
+                  -v "C:\ProgramData\Jenkins\.jenkins\workspace\testjenkins\target:/output" ^
+                  surnet/alpine-wkhtmltopdf:3.18.0-0.12.6-full ^
                   wkhtmltopdf /data/index.html /output/jacoco-report.pdf
+
                 '''
             }
         }
