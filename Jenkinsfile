@@ -18,7 +18,7 @@ pipeline {
             }
         }
 
-        stage('Build & Tests & JaCoCo HTML') {
+        stage('Build, Tests & JaCoCo HTML') {
             steps {
                 bat 'mvn clean test jacoco:report'
             }
@@ -31,7 +31,11 @@ pipeline {
                   -v "%WORKSPACE%\\target\\site\\jacoco:/data" ^
                   -v "%WORKSPACE%\\target:/output" ^
                   surnet/alpine-wkhtmltopdf:3.18.0-0.12.6-full ^
-                  wkhtmltopdf /data/index.html /output/jacoco-report.pdf
+                  wkhtmltopdf ^
+                  --enable-local-file-access ^
+                  --load-error-handling ignore ^
+                  --disable-external-links ^
+                  /data/index.html /output/jacoco-report.pdf
                 '''
             }
         }
@@ -47,7 +51,7 @@ pipeline {
                 <h2>Rapport JaCoCo (PDF)</h2>
                 <p><b>Statut :</b> ${currentBuild.currentResult}</p>
                 <p><b>Build :</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                <p>Rapport JaCoCo PDF en pièce jointe</p>
+                <p>Le rapport JaCoCo PDF est en pièce jointe.</p>
                 """,
                 attachmentsPattern: 'target/jacoco-report.pdf'
             )
