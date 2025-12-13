@@ -18,29 +18,9 @@ pipeline {
             }
         }
 
-        stage('Build & Tests & JaCoCo HTML') {
+        stage('Build, Test & PDF') {
             steps {
-                bat 'mvn clean test jacoco:report'
-            }
-        }
-
-        stage('Generate JaCoCo PDF (Docker)') {
-            steps {
-                bat """
-                docker run --rm ^
-                  -v "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\testjenkins\\target\\site\\jacoco:/data" ^
-                  -v "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\testjenkins\\target:/output" ^
-                  surnet/alpine-wkhtmltopdf:3.18.0-0.12.6-full ^
-                  wkhtmltopdf ^
-                    --enable-local-file-access ^
-                    --load-error-handling ignore ^
-                    --disable-external-links ^
-                    --javascript-delay 500 ^
-                    --no-stop-slow-scripts ^
-                    /data/index.html ^
-                    /output/jacoco-report.pdf ^
-                    || exit 0
-                """
+                bat 'mvn clean test jacoco:report site site:pdf'
             }
         }
     }

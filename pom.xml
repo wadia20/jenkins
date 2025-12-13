@@ -117,6 +117,17 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Plugin pour générer PDF du site -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pdf-plugin</artifactId>
+                <version>1.1</version>
+                <configuration>
+                    <inputDirectory>${project.build.directory}/site</inputDirectory>
+                    <outputFile>${project.build.directory}/jacoco-report.pdf</outputFile>
+                </configuration>
+            </plugin>
+
 
 
         </plugins>
