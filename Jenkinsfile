@@ -2,14 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Remplace par ton email pour les notifications
         RECIPIENTS = 'wadiasouiki@gmail.com'
     }
 
     tools {
-        // Assure-toi que ces noms correspondent aux installations Jenkins
-        maven 'Maven_3.8' // ou change le nom si tu l’as configuré différemment
-        jdk 'JDK_11'       // ou change le nom selon ta config Jenkins
+        maven 'Maven_3.8'
+        jdk 'JDK_11'
     }
 
     stages {
@@ -33,22 +31,38 @@ pipeline {
 
         stage('Code Coverage') {
             steps {
-                // Jacoco reste pour générer la couverture mais sans publier JUnit
                 jacoco execPattern: 'target/jacoco.exec',
                        classPattern: 'target/classes',
                        sourcePattern: 'src/main/java'
+            }
+        }
+
+        stage('Generate JaCoCo PDF') {
+            steps {
+                // Convertit le rapport HTML JaCoCo en PDF via wkhtmltopdf
+                bat """
+                if not exist target\\site\\jacoco\\index.html exit 0
+                "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe" ^
+                --enable-local-file-access ^
+                --javascript-delay 500 ^
+                target\\site\\jacoco\\index.html ^
+                target\\jacoco-report.pdf
+                """
             }
         }
     }
 
     post {
         always {
-            // Notifications par email
-            mail to: "${RECIPIENTS}",
-                 subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: """Le build Jenkins est terminé.
+            // Envoie l'email avec PDF en pièce jointe
+            emailext(
+                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Le build Jenkins est terminé.
 Statut: ${currentBuild.currentResult}
-Voir les détails: ${env.BUILD_URL}"""
+Voir les détails: ${env.BUILD_URL}""",
+                to: "${RECIPIENTS}",
+                attachmentsPattern: "target/jacoco-report.pdf"
+            )
         }
     }
 }
