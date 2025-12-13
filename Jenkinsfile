@@ -18,28 +18,38 @@ pipeline {
             }
         }
 
-        stage('Build & Tests & Coverage') {
+        stage('Build & Tests & JaCoCo HTML') {
             steps {
                 bat 'mvn clean test jacoco:report'
+            }
+        }
+
+        stage('Generate JaCoCo PDF (Docker)') {
+            steps {
+                bat '''
+                docker run --rm ^
+                  -v "%CD%\\target\\site\\jacoco:/data" ^
+                  -v "%CD%\\target:/output" ^
+                  surnet/alpine-wkhtmltopdf ^
+                  wkhtmltopdf /data/index.html /output/jacoco-report.pdf
+                '''
             }
         }
     }
 
     post {
         always {
-
             emailext(
                 to: "${RECIPIENTS}",
-                subject: "JaCoCo Report - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "JaCoCo PDF Report - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
                 body: """
-                <h2>Rapport JaCoCo</h2>
+                <h2>Rapport JaCoCo (PDF)</h2>
                 <p><b>Statut :</b> ${currentBuild.currentResult}</p>
                 <p><b>Build :</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                <p>Rapport JaCoCo en pièce jointe</p>
+                <p>Rapport JaCoCo PDF en pièce jointe</p>
                 """,
-                mimeType: 'text/html',
-
-                attachmentsPattern: 'target/site/jacoco/**/*.*'
+                attachmentsPattern: 'target/jacoco-report.pdf'
             )
         }
     }
