@@ -31,14 +31,11 @@ pipeline {
                   -v "%WORKSPACE%\\target\\site\\jacoco:/data" ^
                   -v "%WORKSPACE%\\target:/output" ^
                   surnet/alpine-wkhtmltopdf:3.18.0-0.12.6-full ^
-                  wkhtmltopdf ^
-                  --enable-local-file-access ^
-                  --load-error-handling ignore ^
-                  --disable-external-links ^
-                  /data/index.html /output/jacoco-report.pdf
+                  sh -c "wkhtmltopdf --enable-local-file-access --load-error-handling ignore --disable-external-links --javascript-delay 500 --no-stop-slow-scripts --quiet /data/index.html /output/jacoco-report.pdf || exit 0"
                 '''
             }
         }
+
     }
 
     post {
