@@ -2,18 +2,17 @@ pipeline {
     agent any
 
     environment {
-        // Email pour les notifications
         RECIPIENTS = 'wadiasouiki@gmail.com'
-        WKHTMLTOPDF = '"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"' // chemin vers wkhtmltopdf sur Windows
+        WKHTMLTOPDF = '"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"'
     }
 
     tools {
-        // Assure-toi que ces noms correspondent aux installations Jenkins
         maven 'Maven_3.8'
         jdk 'JDK_11'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -22,7 +21,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean install -DskipTests=false'
+                bat 'mvn clean compile'
             }
         }
 
@@ -32,7 +31,7 @@ pipeline {
             }
         }
 
-        stage('Code Coverage') {
+        stage('Code Coverage (JaCoCo)') {
             steps {
                 jacoco execPattern: 'target/jacoco.exec',
                        classPattern: 'target/classes',
@@ -40,12 +39,40 @@ pipeline {
             }
         }
 
-        stage('Generate JaCoCo PDF') {
+        stage('SonarQube Analysis') {
             steps {
-                // Vérifie que le rapport HTML existe
+                withSonarQubeEnv('SonarQube') {
+                    bat """
+                    mvn sonar:sonar ^
+                      -Dsonar.projectKey=FinanceApp ^
+                      -Dsonar.projectName=FinanceApp ^
+                      -Dsonar.java.binaries=target/classes
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
                 bat '''
-                if not exist target\\site\\jacoco\\index.html exit 0
-                %WKHTMLTOPDF% --enable-local-file-access --javascript-delay 500 target\\site\\jacoco\\index.html target\\jacoco-report.pdf
+                docker build -t financeapp:1.0 .
+                '''
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                bat '''
+                docker rm -f financeapp_container || exit 0
+                docker run -d -p 8080:8080 --name financeapp_container financeapp:1.0
                 '''
             }
         }
@@ -53,14 +80,18 @@ pipeline {
 
     post {
         always {
-            // Notifications par email avec PDF attaché
             emailext(
                 to: "${RECIPIENTS}",
-                subject: "Build Jenkins: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Jenkins Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: """Le build Jenkins est terminé.
+
 Statut: ${currentBuild.currentResult}
-Voir les détails: ${env.BUILD_URL}""",
-                attachmentsPattern: "target/jacoco-report.pdf"
+Job: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+
+Voir les détails :
+${env.BUILD_URL}
+"""
             )
         }
     }
