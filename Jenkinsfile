@@ -42,11 +42,9 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
+                    // Supprimer les ^ inutiles, utiliser juste les guillemets doubles
                     bat """
-                    mvn sonar:sonar ^
-                      -Dsonar.projectKey=FinanceApp ^
-                      -Dsonar.projectName=FinanceApp ^
-                      -Dsonar.java.binaries=target/classes
+                    mvn sonar:sonar -Dsonar.projectKey=FinanceApp -Dsonar.projectName=FinanceApp -Dsonar.java.binaries=target/classes
                     """
                 }
             }
@@ -62,16 +60,16 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                bat '''
-                docker build -t financeapp:1.0 .
-                '''
+                // Docker build sur Windows doit utiliser "cmd /c" ou juste bat
+                bat 'docker build -t financeapp:1.0 .'
             }
         }
 
         stage('Docker Run') {
             steps {
+                // Supprimer le container si existant
                 bat '''
-                docker rm -f financeapp_container || exit 0
+                docker rm -f financeapp_container || echo Container not found
                 docker run -d -p 8080:8080 --name financeapp_container financeapp:1.0
                 '''
             }
