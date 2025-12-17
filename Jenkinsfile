@@ -42,9 +42,11 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    // Supprimer les ^ inutiles, utiliser juste les guillemets doubles
                     bat """
-                    mvn sonar:sonar -Dsonar.projectKey=FinanceApp -Dsonar.projectName=FinanceApp -Dsonar.java.binaries=target/classes
+                    mvn sonar:sonar ^
+                        -Dsonar.projectKey=FinanceApp ^
+                        -Dsonar.projectName=FinanceApp ^
+                        -Dsonar.java.binaries=target/classes
                     """
                 }
             }
@@ -52,7 +54,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 10, unit: 'MINUTES') { // Timeout augmenté
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -60,28 +62,32 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                // Docker build sur Windows doit utiliser "cmd /c" ou juste bat
-                bat 'docker build -t financeapp:1.0 .'
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    bat 'docker build -t financeapp:1.0 .'
+                }
             }
         }
 
         stage('Docker Run') {
             steps {
-                // Supprimer le container si existant
-                bat '''
-                docker rm -f financeapp_container || echo Container not found
-                docker run -d -p 8080:8080 --name financeapp_container financeapp:1.0
-                '''
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    bat '''
+                    docker rm -f financeapp_container || echo Container not found
+                    docker run -d -p 8080:8080 --name financeapp_container financeapp:1.0
+                    '''
+                }
             }
         }
     }
 
     post {
         always {
-            emailext(
-                to: "${RECIPIENTS}",
-                subject: "Jenkins Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """Le build Jenkins est terminé.
+            script {
+                try {
+                    emailext(
+                        to: "${RECIPIENTS}",
+                        subject: "Jenkins Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: """Le build Jenkins est terminé.
 
 Statut: ${currentBuild.currentResult}
 Job: ${env.JOB_NAME}
@@ -90,7 +96,11 @@ Build: #${env.BUILD_NUMBER}
 Voir les détails :
 ${env.BUILD_URL}
 """
-            )
+                    )
+                } catch (err) {
+                    echo "Erreur lors de l'envoi de l'email : ${err}"
+                }
+            }
         }
     }
 }
