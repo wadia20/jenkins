@@ -54,13 +54,13 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    script {
-                        try {
+                script {
+                    try {
+                        timeout(time: 2, unit: 'MINUTES') {
                             waitForQualityGate abortPipeline: true
-                        } catch (Exception e) {
-                            echo "SonarQube non terminé ou timeout atteint, on continue vers Docker..."
                         }
+                    } catch(err) {
+                        echo "SonarQube non terminé ou timeout atteint, on continue vers Docker..."
                     }
                 }
             }
